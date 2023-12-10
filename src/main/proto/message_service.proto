@@ -1,0 +1,17 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package vkprotobuf;
+option java_package = "org.vkartashov.log.service.replication";
+//option java_outer_classname = "AddressBookProtos";
+
+service LogReplicationService {
+  rpc replicate(ReplicateRequest) returns (ReplicateResponse);
+}
+
+message ReplicateRequest {
+  string message = 1;
+}
+
+message ReplicateResponse {
+  bool replicated = 1;
+}
