@@ -26,7 +26,8 @@ services:
     build: .
     environment:
       SPRING_APPLICATION_JSON: '{
-        "replication-log.is-replica":"true"
+        "replication-log.is-replica":"true",
+        "replication-log.replication-delay":7000
       }'
     ports:
        - "8082:8080"

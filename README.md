@@ -1,33 +1,26 @@
-# replicated-log iteration 1
+# replicated-log iteration 2
 ## Requirements
-The Replicated Log should have the following deployment architecture: one Master and any number of Secondaries.
 
-Master should expose a simple HTTP server (or alternative service with a similar API) with: <br/>
-POST method - appends a message into the in-memory list <br/>
-GET method - returns all messages from the in-memory list <br/>
+In the previous iteration, the replication was blocking for all secondaries, i.e. to return a response to the client we should receive acknowledgements (ACK) from all secondaries.
 
-Secondary should expose a simple  HTTP server(or alternative service with a similar API)  with: <br/>
-GET method - returns all replicated messages from the in-memory list <br/>
 
-Properties and assumptions: <br/>
-* after each POST request, the message should be replicated on every Secondary server <br/>
-* Master should ensure that Secondaries have received a message via ACK <br/>
-* Master’s POST request should be finished only after receiving ACKs from all Secondaries (blocking replication approach) <br/>
-* to test that the replication is blocking, introduce the delay/sleep on the Secondary <br/>
-* at this stage assume that the communication channel is a perfect link (no failures and messages lost) <br/>
-* any RPC framework can be used for Master-Secondary communication (Sockets, language-specific RPC, HTTP, Rest, gRPC, …)<br/>
-* your implementation should support logging <br/>
-* Master and Secondaries should run in Docker<br/>
+
+Current iteration should provide tunable semi-synchronicity for replication, by defining write concern parameters. </br>
+client POST request in addition to the message should also contain write concern parameter w=1,2,3,..,n </br>
+w value specifies how many ACKs the master should receive from secondaries before responding to the client:
+* w = 1 - only from master
+* w = 2 - from master and one secondary
+* w = 3 - from master and two secondaries
+
+Please emulate the replica’s inconsistency (and eventual consistency) with the master by introducing the artificial delay on the secondary node. In this case, the master and secondary should temporarily return different lists of messages. </br>
+Add logic for messages deduplication and to guarantee the total ordering of messages. </br>
+
 
 ## Development
-Java 17, Spring Boot and GRPC have been used for this task </br>
-Server API calls are done through REST, internal communication is done through GRPC </br>
-Configuration of each node is defined by application.properties file: 
-```
-replication-log.is-replica=false
-replication-log.replicas=localhost:6566,localhost:6567
-```
+Replication is reworked to be asynchronous, to see implementation check [ReplicatedLogRepository](src/main/java/org/vkartashov/log/repository/ReplicatedLogRepository.java) </br>
+To release request execution thread, Countdown latch is used.</br>
 
+Ordering number has been introduced to ensure correct ordering on replicas. All log entries are put into TreeSet with ordering through order number. </br>
 ## How to run
 Java 17 is required to be installed on local environment </br>
 Run with command for Mac/Linux:
@@ -36,5 +29,11 @@ Run with command for Mac/Linux:
 ```
 
 ## Results
-As per image below - master request is not finished until message is replicated on all replicas
-![logs-output](./img/logs-output.png)
+MasterLogController is entry point for handling append log entry request.</br>
+As we see thread is released straight away and message is replicated in background</br>
+Write concern 1. As we see thread is released straight away and message is replicated in background.</br>
+![write-concern-1](./img/write-concern-1.png)
+Write concern 2. Thread is released after one of replications has been done. Other replica is artificially delayed for 7 sec.
+![write-concern-2](./img/write-concern-2.png)
+Write concern 3. Thread is released after both replications are done.
+![write-concern-3](./img/write-concern-3.png)
