@@ -5,6 +5,9 @@ import io.grpc.ManagedChannelBuilder;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vkartashov.log.util.LogProtoUtil;
+
+import java.text.MessageFormat;
 
 public class MessageServiceClient {
 
@@ -22,13 +25,13 @@ public class MessageServiceClient {
     }
 
     public boolean replicate(ReplicateRequest request) {
-        LOG.info("Replicating " + request + " to " + host);
+        LOG.info(MessageFormat.format("Replicating {0} to {1}", LogProtoUtil.toString(request), host));
         ReplicateResponse response = stub.replicate(
                 ReplicateRequest.newBuilder()
                         .setMessage(request.getMessage())
                         .build()
         );
-        LOG.info("Replicated " + request + " to " + host);
+        LOG.info(MessageFormat.format("Replicated {0} to {1}", LogProtoUtil.toString(request), host));
         return response.getReplicated();
     }
 

@@ -10,6 +10,7 @@ service LogReplicationService {
 
 message ReplicateRequest {
   string message = 1;
+  int32 orderNum = 2;
 }
 
 message ReplicateResponse {
