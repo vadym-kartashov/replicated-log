@@ -32,6 +32,11 @@ public class MessageReplicaServiceGrpcImpl extends LogReplicationServiceGrpc.Log
     public void replicate(ReplicateRequest request, StreamObserver<ReplicateResponse> responseObserver) {
         LOG.info(MessageFormat.format("Replicating {0}", LogProtoUtil.toString(request)));
         delayReplication();
+        while ((repository.getLastOrderNum() == null && request.getOrderNum() > 0) ||
+                (repository.getLastOrderNum() != null && repository.getLastOrderNum() + 1 < request.getOrderNum())) {
+            LOG.info(MessageFormat.format("Waiting for orderNum {0}", request.getOrderNum() - 1));
+            Thread.sleep(1000);
+        }
         repository.save(new LogEntry(request.getMessage(), request.getOrderNum()), 1);
         responseObserver.onNext(ReplicateResponse.newBuilder().setReplicated(true).build());
         responseObserver.onCompleted();

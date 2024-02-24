@@ -54,12 +54,16 @@ public class ReplicatedLogRepository {
         CountDownLatch latch = new CountDownLatch(replicasToConfirm);
         for (MessageReplicaServiceClient serviceClient : replicas) {
             executorService.execute(() -> {
-                serviceClient.replicate(
-                        ReplicateRequest.newBuilder()
-                                .setMessage(entry.getMessage())
-                                .setOrderNum(entry.getOrderNum())
-                                .build());
-                latch.countDown();
+                try {
+                    serviceClient.replicate(
+                            ReplicateRequest.newBuilder()
+                                    .setMessage(entry.getMessage())
+                                    .setOrderNum(entry.getOrderNum())
+                                    .build());
+                    latch.countDown();
+                } catch (Exception e) {
+                    LOG.error("Error replicating message", e);
+                }
             });
         }
         latch.await();
@@ -71,7 +75,7 @@ public class ReplicatedLogRepository {
     }
 
     public Long getLastOrderNum() {
-        return logEntriesIndex.lastKey();
+        return logEntriesIndex.isEmpty() ? null : logEntriesIndex.lastKey();
     }
 
 }
