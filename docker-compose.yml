@@ -33,7 +33,7 @@ services:
     environment:
       SPRING_APPLICATION_JSON: '{
         "replication-log.is-replica":"true",
-        "replication-log.replication-delay":7000
+        "replication-log.replication-delay":0
       }'
       JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     ports:

@@ -15,6 +15,7 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Repository
 public class ReplicatedLogRepository {
@@ -24,6 +25,7 @@ public class ReplicatedLogRepository {
     private final List<MessageReplicaServiceClient> replicas;
     private final ExecutorService executorService;
     private final SortedMap<Long, LogEntry> logEntriesIndex = new ConcurrentSkipListMap<>();
+    private final AtomicInteger orderNum = new AtomicInteger(0);
 
     @Autowired
     public ReplicatedLogRepository(List<MessageReplicaServiceClient> replicas, ExecutorService replicationExecutorService) {
@@ -41,7 +43,7 @@ public class ReplicatedLogRepository {
 
         LOG.info("Saving " + logEntry);
         if (logEntry.getOrderNum() == null) {
-            logEntry.setOrderNum(logEntriesIndex.size());
+            logEntry.setOrderNum(orderNum.getAndIncrement());
         }
         int orderNum = logEntry.getOrderNum();
         replicateMessage(logEntry, replicasToConfirm);

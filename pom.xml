@@ -15,8 +15,8 @@
     <description>Replication-log-iteration-1</description>
     <properties>
         <java.version>17</java.version>
-        <grpc.version>1.58.0</grpc.version>
-        <protoc.version>3.24.4</protoc.version>
+        <grpc.version>1.55.1</grpc.version>
+        <protoc.version>3.24.0</protoc.version>
     </properties>
     <dependencies>
         <dependency>
@@ -43,7 +43,7 @@
         <dependency>
             <groupId>io.github.lognet</groupId>
             <artifactId>grpc-spring-boot-starter</artifactId>
-            <version>5.1.5</version>
+            <version>5.1.3</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -52,17 +52,7 @@
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
-            <artifactId>grpc-api</artifactId>
-            <version>${grpc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>
-            <version>${grpc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-core</artifactId>
             <version>${grpc.version}</version>
         </dependency>
         <dependency>
@@ -73,26 +63,12 @@
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
-            <version>1.3.2</version>
+            <version>1.2</version>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
             <version>2.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty-shaded</artifactId>
-            <version>${grpc.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.github.rholder</groupId>
-            <artifactId>guava-retrying</artifactId>
-            <version>2.0.0</version>
         </dependency>
     </dependencies>
 

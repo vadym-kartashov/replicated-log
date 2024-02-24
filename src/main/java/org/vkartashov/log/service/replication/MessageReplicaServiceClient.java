@@ -26,12 +26,13 @@ public class MessageReplicaServiceClient {
     public void init() {
         ManagedChannel channel = ManagedChannelBuilder
                 .forTarget(host)
+                .usePlaintext()
                 .build();
         stub = LogReplicationServiceGrpc.newBlockingStub(channel);
     }
 
     public boolean replicate(ReplicateRequest request) {
-        int maxRetries = 5;
+        int maxRetries = 10;
         int retryCount = 0;
         int baseDelay = 1;  // Delay in seconds
         int backoffFactor = 2; // How much delay increases on each retry
@@ -42,13 +43,14 @@ public class MessageReplicaServiceClient {
                 ReplicateResponse response = stub.replicate(
                         ReplicateRequest.newBuilder()
                                 .setMessage(request.getMessage())
+                                .setOrderNum(request.getOrderNum())
                                 .build()
                 );
                 LOG.info(MessageFormat.format("Replicated {0} to {1}", LogProtoUtil.toString(request), host));
                 return response.getReplicated();
 
             } catch (Exception e) {
-                LOG.warn("Replication failed. Retrying...", e);
+                LOG.warn("Replication failed. Retrying..." + e.getMessage());
                 int delay = baseDelay * (int) Math.pow(backoffFactor, retryCount);
                 try {
                     Thread.sleep(delay * 1000); // Sleep is in milliseconds
