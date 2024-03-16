@@ -6,6 +6,7 @@ option java_package = "org.vkartashov.log.service.replication";
 
 service LogReplicationService {
   rpc replicate(ReplicateRequest) returns (ReplicateResponse);
+  rpc getReplicationState(GetReplicationStateRequest) returns (GetReplicationStateResponse);
 }
 
 message ReplicateRequest {
@@ -15,4 +16,12 @@ message ReplicateRequest {
 
 message ReplicateResponse {
   bool replicated = 1;
+}
+
+message GetReplicationStateRequest {
+  int32 lastOrderNum = 1;
+}
+
+message GetReplicationStateResponse {
+  int64 lastOrderNum = 1;
 }

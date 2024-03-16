@@ -7,24 +7,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.Assert;
 import org.vkartashov.log.controller.dto.LogEntry;
-import org.vkartashov.log.service.replication.MessageServiceClient;
+import org.vkartashov.log.service.replication.MessageReplicaServiceClient;
 import org.vkartashov.log.service.replication.ReplicateRequest;
 
-import java.util.*;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Repository
 public class ReplicatedLogRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReplicatedLogRepository.class);
 
-    private final List<MessageServiceClient> replicas;
+    private final List<MessageReplicaServiceClient> replicas;
     private final ExecutorService executorService;
-    private final SortedSet<LogEntry> logEntries = new TreeSet<>(Comparator.comparingLong(LogEntry::getOrderNum));
+    private final SortedMap<Long, LogEntry> logEntriesIndex = new ConcurrentSkipListMap<>();
+    private final AtomicInteger orderNum = new AtomicInteger(0);
 
     @Autowired
-    public ReplicatedLogRepository(List<MessageServiceClient> replicas, ExecutorService replicationExecutorService) {
+    public ReplicatedLogRepository(List<MessageReplicaServiceClient> replicas, ExecutorService replicationExecutorService) {
         this.replicas = replicas;
         this.executorService = replicationExecutorService;
     }
@@ -38,26 +42,30 @@ public class ReplicatedLogRepository {
                 "Not enough replicas configured to support write concern %d".formatted(writeConcern));
 
         LOG.info("Saving " + logEntry);
-        synchronized (logEntries) {
-            int orderNum = logEntries.size();
-            logEntry.setOrderNum(orderNum);
-            replicateMessage(logEntry, replicasToConfirm);
-            logEntries.add(logEntry);
+        if (logEntry.getOrderNum() == null) {
+            logEntry.setOrderNum(orderNum.getAndIncrement());
         }
+        int orderNum = logEntry.getOrderNum();
+        replicateMessage(logEntry, replicasToConfirm);
+        logEntriesIndex.put((long) orderNum, logEntry);
         LOG.info("Saved " + logEntry);
     }
 
     @SneakyThrows
     private void replicateMessage(LogEntry entry, int replicasToConfirm) {
         CountDownLatch latch = new CountDownLatch(replicasToConfirm);
-        for (MessageServiceClient serviceClient : replicas) {
+        for (MessageReplicaServiceClient serviceClient : replicas) {
             executorService.execute(() -> {
-                serviceClient.replicate(
-                        ReplicateRequest.newBuilder()
-                                .setMessage(entry.getMessage())
-                                .setOrderNum(entry.getOrderNum())
-                                .build());
-                latch.countDown();
+                try {
+                    serviceClient.replicate(
+                            ReplicateRequest.newBuilder()
+                                    .setMessage(entry.getMessage())
+                                    .setOrderNum(entry.getOrderNum())
+                                    .build());
+                    latch.countDown();
+                } catch (Exception e) {
+                    LOG.error("Error replicating message", e);
+                }
             });
         }
         latch.await();
@@ -65,7 +73,11 @@ public class ReplicatedLogRepository {
 
     public List<LogEntry> getLogEntries() {
         LOG.info("Get log entries");
-        return List.copyOf(logEntries);
+        return List.copyOf(logEntriesIndex.values());
+    }
+
+    public Long getLastOrderNum() {
+        return logEntriesIndex.isEmpty() ? null : logEntriesIndex.lastKey();
     }
 
 }

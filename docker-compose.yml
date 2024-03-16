@@ -8,9 +8,13 @@ services:
         "replication-log.is-replica":"false",
         "replication-log.replicas":"replica1:6565,replica2:6565"
       }'
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     ports:
       - "8080:8080"
       - "6565:6565"
+      - "5005:5005"
+
+
 
   replica1:
     build: .
@@ -18,17 +22,21 @@ services:
       SPRING_APPLICATION_JSON: '{
         "replication-log.is-replica":"true"
       }'
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     ports:
        - "8081:8080"
        - "6566:6565"
+       - "5006:5005"
 
   replica2:
     build: .
     environment:
       SPRING_APPLICATION_JSON: '{
         "replication-log.is-replica":"true",
-        "replication-log.replication-delay":7000
+        "replication-log.replication-delay":0
       }'
+      JAVA_TOOL_OPTIONS: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     ports:
        - "8082:8080"
        - "6567:6565"
+       - "5007:5005"

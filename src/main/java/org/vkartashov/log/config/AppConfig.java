@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.vkartashov.log.service.replication.MessageServiceClient;
+import org.vkartashov.log.service.replication.MessageReplicaServiceClient;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -20,7 +20,7 @@ public class AppConfig {
 
     @Bean
     @ConditionalOnExpression("!${replication-log.is-replica}")
-    public List<MessageServiceClient> replicas(){
+    public List<MessageReplicaServiceClient> replicas(){
         var replicaHosts = replicasList.split(",");
         return Stream.of(replicaHosts)
                 .map(this::messageServiceClient)
@@ -34,8 +34,10 @@ public class AppConfig {
         );
     }
 
-    private MessageServiceClient messageServiceClient(String url) {
-        return new MessageServiceClient(url);
+    private MessageReplicaServiceClient messageServiceClient(String url) {
+        MessageReplicaServiceClient serviceClient = new MessageReplicaServiceClient(url);
+        serviceClient.init();
+        return serviceClient;
     }
 
 }
